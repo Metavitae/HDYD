@@ -1,7 +1,13 @@
 import { Stack } from "expo-router";
+import { useEffect } from "react";
 import { GameProvider } from "./context/GameContext";
+import { requestMicPermissionOnce } from "./context/micPermission";
 
 export default function RootLayout() {
+  useEffect(() => {
+    requestMicPermissionOnce();
+  }, []);
+
   return (
     <GameProvider>
       <Stack screenOptions={{ headerShown: false }}>

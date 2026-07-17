@@ -7,6 +7,7 @@ export type Player = {
   name: string;
   type: PlayerType;
   score: number;
+  cheerScore: number;
 };
 
 export type Country = {
@@ -36,6 +37,7 @@ type GameContextValue = GameState & {
   currentPlayer: Player | null;
   setCurrentCountry: (country: Country | null) => void;
   addScore: (playerIndex: number, points: number) => void;
+  addCheerScore: (playerIndex: number, points: number) => void;
   resetGame: () => void;
 };
 
@@ -59,7 +61,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentCountry, setCurrentCountry] = useState<Country | null>(initialState.currentCountry);
 
   const addPlayer = (name: string, type: PlayerType) => {
-    setPlayers(prev => [...prev, { name, type, score: 0 }]);
+    setPlayers(prev => [...prev, { name, type, score: 0, cheerScore: 0 }]);
   };
 
   const nextRound = () => {
@@ -73,6 +75,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const addScore = (playerIndex: number, points: number) => {
     setPlayers(prev =>
       prev.map((p, i) => (i === playerIndex ? { ...p, score: p.score + points } : p))
+    );
+  };
+
+  const addCheerScore = (playerIndex: number, points: number) => {
+    setPlayers(prev =>
+      prev.map((p, i) => (i === playerIndex ? { ...p, cheerScore: p.cheerScore + points } : p))
     );
   };
 
@@ -106,6 +114,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       nextPlayerTurn,
       setCurrentCountry,
       addScore,
+      addCheerScore,
       resetGame,
     }),
     [players, mode, roundCount, currentRoundIndex, currentPlayerIndex, currentCountry, currentPlayer]

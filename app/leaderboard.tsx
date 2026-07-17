@@ -25,9 +25,6 @@ export default function Leaderboard() {
       <TouchableOpacity onPress={() => router.push("/round")} style={{ backgroundColor: "#C9963A", paddingHorizontal: 48, paddingVertical: 18, width: "100%", alignItems: "center", marginTop: 32 }}>
         <Text style={{ color: "#1A0A2E", fontSize: 16, fontWeight: "700", letterSpacing: 4 }}>NEXT ROUND</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push("/winner")} style={{ marginTop: 20, alignItems: "center", padding: 16 }}>
-        <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase" }}>End Game →</Text>
-      </TouchableOpacity>
     </View>
   );
 }

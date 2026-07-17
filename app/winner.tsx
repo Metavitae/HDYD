@@ -16,9 +16,14 @@ export default function Winner() {
     ]).start();
   }, []);
 
-  const sorted = [...players].sort((a, b) => b.score - a.score);
-  const champion = sorted[0] ?? null;
-  const runnerUp = sorted[1] ?? null;
+  // Score Champion: purely rhythm/physicality (players[].score). Crowd Favorite:
+  // purely accumulated cheer volume (players[].cheerScore) — separate category,
+  // never merged into or influencing the score above.
+  const scoreSorted = [...players].sort((a, b) => b.score - a.score);
+  const champion = scoreSorted[0] ?? null;
+
+  const cheerSorted = [...players].sort((a, b) => b.cheerScore - a.cheerScore);
+  const crowdFavorite = cheerSorted[0] ?? null;
 
   const handlePlayAgain = () => {
     resetGame();
@@ -31,30 +36,30 @@ export default function Winner() {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1A0A2E", padding: 24 }}>
-      <Animated.View style={{ alignItems: "center", transform: [{ scale: scaleAnim }], marginBottom: 48 }}>
-        <Text style={{ fontSize: 80 }}>🏆</Text>
-        <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase", marginTop: 16, marginBottom: 8 }}>Score Champion</Text>
-        <Text style={{ color: "#F0E6FF", fontSize: 36, fontWeight: "700", textAlign: "center" }}>{champion ? champion.name : "—"}</Text>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1A0A2E", paddingHorizontal: 20, paddingVertical: 16 }}>
+      <Animated.View style={{ alignItems: "center", transform: [{ scale: scaleAnim }], marginBottom: 20 }}>
+        <Text style={{ fontSize: 52 }}>🏆</Text>
+        <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginTop: 10, marginBottom: 4 }}>Score Champion</Text>
+        <Text style={{ color: "#F0E6FF", fontSize: 26, fontWeight: "700", textAlign: "center" }}>{champion ? champion.name : "—"}</Text>
         {champion && (
-          <Text style={{ color: "#C9963A", fontSize: 16, fontStyle: "italic", marginTop: 8, textAlign: "center" }}>{champion.score} points</Text>
+          <Text style={{ color: "#C9963A", fontSize: 13, fontStyle: "italic", marginTop: 4, textAlign: "center" }}>{champion.score} points</Text>
         )}
       </Animated.View>
 
-      {mode === "crowd" && runnerUp && (
-        <Animated.View style={{ alignItems: "center", opacity: fadeAnim, marginBottom: 48, width: "100%", borderWidth: 1, borderColor: "#C9963A", borderRadius: 4, padding: 24 }}>
-          <Text style={{ fontSize: 50 }}>👑</Text>
-          <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase", marginTop: 16, marginBottom: 8 }}>Crowd Favorite</Text>
-          <Text style={{ color: "#F0E6FF", fontSize: 28, fontWeight: "700", textAlign: "center" }}>{runnerUp.name}</Text>
-          <Text style={{ color: "#C9963A", fontSize: 16, fontStyle: "italic", marginTop: 8, textAlign: "center" }}>{runnerUp.score} points</Text>
+      {mode === "crowd" && crowdFavorite && (
+        <Animated.View style={{ alignItems: "center", opacity: fadeAnim, marginBottom: 20, width: "100%", borderWidth: 1, borderColor: "#C9963A", borderRadius: 4, padding: 14 }}>
+          <Text style={{ fontSize: 34 }}>👑</Text>
+          <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginTop: 8, marginBottom: 4 }}>Crowd Favorite</Text>
+          <Text style={{ color: "#F0E6FF", fontSize: 20, fontWeight: "700", textAlign: "center" }}>{crowdFavorite.name}</Text>
+          <Text style={{ color: "#C9963A", fontSize: 13, fontStyle: "italic", marginTop: 4, textAlign: "center" }}>{crowdFavorite.cheerScore} cheer</Text>
         </Animated.View>
       )}
 
-      <TouchableOpacity onPress={handlePlayAgain} style={{ backgroundColor: "#C9963A", paddingHorizontal: 48, paddingVertical: 18, width: "100%", alignItems: "center", marginTop: mode === "crowd" ? 0 : 48 }}>
-        <Text style={{ color: "#1A0A2E", fontSize: 16, fontWeight: "700", letterSpacing: 4 }}>PLAY AGAIN</Text>
+      <TouchableOpacity onPress={handlePlayAgain} style={{ backgroundColor: "#C9963A", paddingHorizontal: 48, paddingVertical: 14, width: "100%", alignItems: "center" }}>
+        <Text style={{ color: "#1A0A2E", fontSize: 15, fontWeight: "700", letterSpacing: 3 }}>PLAY AGAIN</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={handleExit} style={{ marginTop: 20, alignItems: "center", padding: 16 }}>
-        <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase" }}>Exit to Menu</Text>
+      <TouchableOpacity onPress={handleExit} style={{ marginTop: 10, alignItems: "center", padding: 10 }}>
+        <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase" }}>Exit to Menu</Text>
       </TouchableOpacity>
     </View>
   );

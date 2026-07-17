@@ -55,7 +55,9 @@
             "./assets/models/"
           ]
         }
-      ]
+      ],
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
