@@ -103,56 +103,60 @@ export default function Players() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1A0A2E", padding: 24 }}>
-      <ScrollView>
-        {step === "type" && (
-          <View style={{ marginTop: players.length === 0 ? 120 : 40 }}>
-            {players.length > 0 && (
-              <View style={{ marginBottom: 40 }}>
-                <Text style={{ color: "#C9963A", fontSize: 11, letterSpacing: 4, textTransform: "uppercase", marginBottom: 12 }}>Players</Text>
+    <View style={{ flex: 1, backgroundColor: "#1A0A2E", padding: 20, justifyContent: "center" }}>
+      {step === "type" && (
+        <View style={{ width: "100%" }}>
+          {players.length > 0 && (
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ color: "#C9963A", fontSize: 10, letterSpacing: 3, textTransform: "uppercase", marginBottom: 6 }}>Players</Text>
+              {/* Roster grows with player count and has no upper bound, unlike the
+                  rest of this screen — this is the one place on the page that may
+                  need its own small internal scroll; everything else (header,
+                  buttons) always stays fully visible and the page itself never scrolls. */}
+              <ScrollView style={{ maxHeight: 130 }} showsVerticalScrollIndicator={false}>
                 {players.map((p, i) => (
-                  <Text key={i} style={{ color: "#F0E6FF", fontSize: 16, marginBottom: 6 }}>
-                    {i + 1}. {p.name} <Text style={{ color: "#C9963A", fontSize: 12 }}>({p.type})</Text>
+                  <Text key={i} style={{ color: "#F0E6FF", fontSize: 14, marginBottom: 4 }}>
+                    {i + 1}. {p.name} <Text style={{ color: "#C9963A", fontSize: 11 }}>({p.type})</Text>
                   </Text>
                 ))}
-              </View>
-            )}
-            <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>
-              {players.length === 0 ? "First Player" : "Next Player"}
-            </Text>
-            <Text style={{ color: "#F0E6FF", fontSize: 32, fontStyle: "italic", marginBottom: 48, textAlign: "center" }}>Solo or Group?</Text>
-            <TouchableOpacity onPress={() => selectType("solo")} style={{ backgroundColor: "#C9963A", padding: 24, marginBottom: 16, alignItems: "center" }}>
-              <Text style={{ color: "#1A0A2E", fontSize: 18, fontWeight: "700", letterSpacing: 3 }}>SOLO</Text>
-              <Text style={{ color: "#1A0A2E", fontSize: 12, marginTop: 6, opacity: 0.7 }}>One dancer</Text>
+              </ScrollView>
+            </View>
+          )}
+          <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8, textAlign: "center" }}>
+            {players.length === 0 ? "First Player" : "Next Player"}
+          </Text>
+          <Text style={{ color: "#F0E6FF", fontSize: 26, fontStyle: "italic", marginBottom: 20, textAlign: "center" }}>Solo or Group?</Text>
+          <TouchableOpacity onPress={() => selectType("solo")} style={{ backgroundColor: "#C9963A", padding: 16, marginBottom: 10, alignItems: "center" }}>
+            <Text style={{ color: "#1A0A2E", fontSize: 16, fontWeight: "700", letterSpacing: 3 }}>SOLO</Text>
+            <Text style={{ color: "#1A0A2E", fontSize: 11, marginTop: 4, opacity: 0.7 }}>One dancer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => selectType("group")} style={{ borderWidth: 1, borderColor: "#C9963A", padding: 16, alignItems: "center" }}>
+            <Text style={{ color: "#C9963A", fontSize: 16, fontWeight: "700", letterSpacing: 3 }}>GROUP</Text>
+            <Text style={{ color: "#F0E6FF", fontSize: 11, marginTop: 4, opacity: 0.7 }}>Two or more dancers</Text>
+          </TouchableOpacity>
+          {players.length > 0 && (
+            <TouchableOpacity onPress={() => router.push("/round")} style={{ marginTop: 16, alignItems: "center", padding: 10 }}>
+              <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase" }}>Start Game →</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => selectType("group")} style={{ borderWidth: 1, borderColor: "#C9963A", padding: 24, alignItems: "center" }}>
-              <Text style={{ color: "#C9963A", fontSize: 18, fontWeight: "700", letterSpacing: 3 }}>GROUP</Text>
-              <Text style={{ color: "#F0E6FF", fontSize: 12, marginTop: 6, opacity: 0.7 }}>Two or more dancers</Text>
-            </TouchableOpacity>
-            {players.length > 0 && (
-              <TouchableOpacity onPress={() => router.push("/round")} style={{ marginTop: 32, alignItems: "center", padding: 16 }}>
-                <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase" }}>Start Game →</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+          )}
+        </View>
+      )}
 
-        {step === "name" && (
-          <View style={{ marginTop: 40 }}>
-            <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>Pick Your Name</Text>
-            {shownNames.map((name, i) => (
-              <TouchableOpacity key={i} onPress={() => pickName(name)} style={{ borderWidth: 1, borderColor: "#C9963A", padding: 18, marginBottom: 10, alignItems: "center" }}>
-                <Text style={{ color: "#F0E6FF", fontSize: 16, fontWeight: "600" }}>{name}</Text>
-              </TouchableOpacity>
-            ))}
-            {shuffles < 2 && (
-              <TouchableOpacity onPress={shuffle} style={{ marginTop: 16, alignItems: "center", padding: 16 }}>
-                <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 3 }}>Shuffle ({2 - shuffles} left)</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </ScrollView>
+      {step === "name" && (
+        <View style={{ width: "100%" }}>
+          <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginBottom: 10, textAlign: "center" }}>Pick Your Name</Text>
+          {shownNames.map((name, i) => (
+            <TouchableOpacity key={i} onPress={() => pickName(name)} style={{ borderWidth: 1, borderColor: "#C9963A", padding: 11, marginBottom: 6, alignItems: "center" }}>
+              <Text style={{ color: "#F0E6FF", fontSize: 14, fontWeight: "600" }}>{name}</Text>
+            </TouchableOpacity>
+          ))}
+          {shuffles < 2 && (
+            <TouchableOpacity onPress={shuffle} style={{ marginTop: 8, alignItems: "center", padding: 10 }}>
+              <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3 }}>Shuffle ({2 - shuffles} left)</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 }
