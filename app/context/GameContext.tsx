@@ -3,6 +3,12 @@ import { createContext, useContext, useState, useMemo, ReactNode } from "react";
 export type PlayerType = "solo" | "group";
 export type GameMode = "pure" | "crowd";
 
+// Hard cap, not a soft suggestion — empirically verified to fit every screen
+// that lists all players (players.tsx roster, leaderboard.tsx rows) within a
+// 375x667 viewport (smallest realistic phone target) with zero scrolling,
+// with real margin to spare. Raising this requires re-verifying both screens.
+export const MAX_PLAYERS = 10;
+
 export type Player = {
   name: string;
   type: PlayerType;
@@ -61,7 +67,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentCountry, setCurrentCountry] = useState<Country | null>(initialState.currentCountry);
 
   const addPlayer = (name: string, type: PlayerType) => {
-    setPlayers(prev => [...prev, { name, type, score: 0, cheerScore: 0 }]);
+    setPlayers(prev => (prev.length >= MAX_PLAYERS ? prev : [...prev, { name, type, score: 0, cheerScore: 0 }]));
   };
 
   const nextRound = () => {

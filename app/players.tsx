@@ -1,7 +1,7 @@
-import { Text, View, TouchableOpacity, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
-import { useGame } from "./context/GameContext";
+import { useGame, MAX_PLAYERS } from "./context/GameContext";
 import type { PlayerType } from "./context/GameContext";
 
 // Fallback pool, used until (and unless) the daily-generated pool loads
@@ -36,7 +36,10 @@ export default function Players() {
   const router = useRouter();
   const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>();
   const { players, addPlayer, mode, setMode } = useGame();
-  const [step, setStep] = useState("type");
+  // Crowd mode gets a one-time, vague heads-up before the roster starts —
+  // shown once per game since this screen is only ever visited once per
+  // game. Pure mode skips straight to "type".
+  const [step, setStep] = useState<"announce" | "type" | "name">(modeParam === "crowd" ? "announce" : "type");
   const [currentType, setCurrentType] = useState<PlayerType | null>(null);
   const [shuffles, setShuffles] = useState(0);
   const [shownNames, setShownNames] = useState<string[]>([]);
@@ -46,6 +49,17 @@ export default function Players() {
   useEffect(() => {
     if ((modeParam === "pure" || modeParam === "crowd") && modeParam !== mode) {
       setMode(modeParam);
+    }
+  }, [modeParam]);
+
+  // useLocalSearchParams can resolve modeParam a render or two after mount,
+  // after the step initializer above has already locked in "type" — this
+  // catches that case and upgrades once. Guarded on step still being "type"
+  // (its default) so it can't re-fire and re-show the announcement after the
+  // player has already moved past it later in the game.
+  useEffect(() => {
+    if (modeParam === "crowd" && step === "type") {
+      setStep("announce");
     }
   }, [modeParam]);
 
@@ -104,36 +118,57 @@ export default function Players() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#1A0A2E", padding: 20, justifyContent: "center" }}>
+      {step === "announce" && (
+        <View style={{ width: "100%", alignItems: "center" }}>
+          <Text style={{ fontSize: 40, marginBottom: 20 }}>👀</Text>
+          <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>One More Thing</Text>
+          <Text style={{ color: "#F0E6FF", fontSize: 22, fontStyle: "italic", marginBottom: 16, textAlign: "center" }}>
+            The crowd's not just watching tonight.
+          </Text>
+          <Text style={{ color: "#F0E6FF", fontSize: 14, textAlign: "center", marginBottom: 28, opacity: 0.8, lineHeight: 20 }}>
+            How everyone reacts while people dance? That might matter more than you think.
+          </Text>
+          <TouchableOpacity onPress={() => setStep("type")} style={{ backgroundColor: "#C9963A", padding: 16, width: "100%", alignItems: "center" }}>
+            <Text style={{ color: "#1A0A2E", fontSize: 15, fontWeight: "700", letterSpacing: 3 }}>LET'S DANCE</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {step === "type" && (
         <View style={{ width: "100%" }}>
           {players.length > 0 && (
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: "#C9963A", fontSize: 10, letterSpacing: 3, textTransform: "uppercase", marginBottom: 6 }}>Players</Text>
-              {/* Roster grows with player count and has no upper bound, unlike the
-                  rest of this screen — this is the one place on the page that may
-                  need its own small internal scroll; everything else (header,
-                  buttons) always stays fully visible and the page itself never scrolls. */}
-              <ScrollView style={{ maxHeight: 130 }} showsVerticalScrollIndicator={false}>
-                {players.map((p, i) => (
-                  <Text key={i} style={{ color: "#F0E6FF", fontSize: 14, marginBottom: 4 }}>
-                    {i + 1}. {p.name} <Text style={{ color: "#C9963A", fontSize: 11 }}>({p.type})</Text>
-                  </Text>
-                ))}
-              </ScrollView>
+              {players.map((p, i) => (
+                <Text key={i} style={{ color: "#F0E6FF", fontSize: 14, marginBottom: 4 }}>
+                  {i + 1}. {p.name} <Text style={{ color: "#C9963A", fontSize: 11 }}>({p.type})</Text>
+                </Text>
+              ))}
             </View>
           )}
-          <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8, textAlign: "center" }}>
-            {players.length === 0 ? "First Player" : "Next Player"}
-          </Text>
-          <Text style={{ color: "#F0E6FF", fontSize: 26, fontStyle: "italic", marginBottom: 20, textAlign: "center" }}>Solo or Group?</Text>
-          <TouchableOpacity onPress={() => selectType("solo")} style={{ backgroundColor: "#C9963A", padding: 16, marginBottom: 10, alignItems: "center" }}>
-            <Text style={{ color: "#1A0A2E", fontSize: 16, fontWeight: "700", letterSpacing: 3 }}>SOLO</Text>
-            <Text style={{ color: "#1A0A2E", fontSize: 11, marginTop: 4, opacity: 0.7 }}>One dancer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => selectType("group")} style={{ borderWidth: 1, borderColor: "#C9963A", padding: 16, alignItems: "center" }}>
-            <Text style={{ color: "#C9963A", fontSize: 16, fontWeight: "700", letterSpacing: 3 }}>GROUP</Text>
-            <Text style={{ color: "#F0E6FF", fontSize: 11, marginTop: 4, opacity: 0.7 }}>Two or more dancers</Text>
-          </TouchableOpacity>
+          {players.length >= MAX_PLAYERS ? (
+            <View style={{ alignItems: "center", marginBottom: 4 }}>
+              <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8, textAlign: "center" }}>Party's Full</Text>
+              <Text style={{ color: "#F0E6FF", fontSize: 15, textAlign: "center", opacity: 0.8 }}>
+                {MAX_PLAYERS} dancers is the max for one game. Time to hit the floor!
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8, textAlign: "center" }}>
+                {players.length === 0 ? "First Player" : "Next Player"}
+              </Text>
+              <Text style={{ color: "#F0E6FF", fontSize: 26, fontStyle: "italic", marginBottom: 20, textAlign: "center" }}>Solo or Group?</Text>
+              <TouchableOpacity onPress={() => selectType("solo")} style={{ backgroundColor: "#C9963A", padding: 16, marginBottom: 10, alignItems: "center" }}>
+                <Text style={{ color: "#1A0A2E", fontSize: 16, fontWeight: "700", letterSpacing: 3 }}>SOLO</Text>
+                <Text style={{ color: "#1A0A2E", fontSize: 11, marginTop: 4, opacity: 0.7 }}>One dancer</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => selectType("group")} style={{ borderWidth: 1, borderColor: "#C9963A", padding: 16, alignItems: "center" }}>
+                <Text style={{ color: "#C9963A", fontSize: 16, fontWeight: "700", letterSpacing: 3 }}>GROUP</Text>
+                <Text style={{ color: "#F0E6FF", fontSize: 11, marginTop: 4, opacity: 0.7 }}>Two or more dancers</Text>
+              </TouchableOpacity>
+            </>
+          )}
           {players.length > 0 && (
             <TouchableOpacity onPress={() => router.push("/round")} style={{ marginTop: 16, alignItems: "center", padding: 10 }}>
               <Text style={{ color: "#C9963A", fontSize: 12, letterSpacing: 3, textTransform: "uppercase" }}>Start Game →</Text>

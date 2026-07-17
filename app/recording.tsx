@@ -6,7 +6,6 @@ import { useGame } from "./context/GameContext";
 import { micPermission } from "./context/micPermission";
 
 const BASELINE_WINDOW_MS = 1000;
-const PEAK_WINDOW_MS = 3000;
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -20,14 +19,18 @@ export default function Recording() {
   const [timeLeft, setTimeLeft] = useState(30);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Crowd mode only: capture ambient baseline + peak cheer volume starting 2s
-  // before the dance timer ends, spanning the last moments of the dance plus
-  // the moment right after. Never surfaces in the UI; only feeds cheerScore.
+  // Crowd mode only: capture ambient baseline starting 2s before the dance
+  // timer ends, then keep listening for the peak indefinitely — it does NOT
+  // auto-stop on a timer. The host controls when capture ends by tapping
+  // "SEE RESULTS"; that's the moment finishClapometer() reads the final peak
+  // and stops the recorder. Never surfaces in the UI; only feeds cheerScore.
   const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
   const recorderState = useAudioRecorderState(recorder, 100);
   const captureStageRef = useRef<"idle" | "baseline" | "peak">("idle");
   const baselineSamplesRef = useRef<number[]>([]);
+  const baselineValueRef = useRef(0);
   const peakRef = useRef(-Infinity);
+  const clapometerActiveRef = useRef(false);
 
   useEffect(() => {
     if (recorderState.metering === undefined) return;
@@ -39,32 +42,50 @@ export default function Recording() {
     }
   }, [recorderState.metering]);
 
-  const runClapometer = async () => {
+  const startClapometer = async () => {
     if (mode !== "crowd" || !micPermission.granted) return;
     try {
       await recorder.prepareToRecordAsync();
       recorder.record();
+      clapometerActiveRef.current = true;
 
       baselineSamplesRef.current = [];
       captureStageRef.current = "baseline";
       await sleep(BASELINE_WINDOW_MS);
       const samples = baselineSamplesRef.current;
-      const baseline = samples.length > 0 ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
+      baselineValueRef.current = samples.length > 0 ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
 
       peakRef.current = -Infinity;
-      captureStageRef.current = "peak";
-      await sleep(PEAK_WINDOW_MS);
-      const peak = peakRef.current === -Infinity ? baseline : peakRef.current;
-
-      captureStageRef.current = "idle";
-      await recorder.stop();
-
-      const cheerScore = Math.max(0, Math.round(peak - baseline));
-      addCheerScore(currentPlayerIndex, cheerScore);
+      captureStageRef.current = "peak"; // stays here — the metering effect keeps updating peakRef until finishClapometer stops it
     } catch {
       captureStageRef.current = "idle";
+      clapometerActiveRef.current = false;
     }
   };
+
+  const finishClapometer = async () => {
+    if (!clapometerActiveRef.current) return;
+    clapometerActiveRef.current = false;
+    try {
+      const peak = peakRef.current === -Infinity ? baselineValueRef.current : peakRef.current;
+      captureStageRef.current = "idle";
+      await recorder.stop();
+      const cheerScore = Math.max(0, Math.round(peak - baselineValueRef.current));
+      addCheerScore(currentPlayerIndex, cheerScore);
+    } catch {
+      // swallow — never block navigation on this
+    }
+  };
+
+  // Safety net for leaving mid-capture without tapping "SEE RESULTS" — back
+  // gesture, app switch, anything. finishClapometer() no-ops via
+  // clapometerActiveRef if capture already ended normally, so this never
+  // double-stops the recorder; it only catches the case where it's still open.
+  useEffect(() => {
+    return () => {
+      finishClapometer();
+    };
+  }, []);
 
   useEffect(() => {
     if (phase === "countdown") {
@@ -90,7 +111,7 @@ export default function Recording() {
         setTimeLeft(prev => {
           if (prev <= 1) { clearInterval(interval); setPhase("done"); return 0; }
           const next = prev - 1;
-          if (next === 2) runClapometer();
+          if (next === 2) startClapometer();
           return next;
         });
       }, 1000);
@@ -123,7 +144,13 @@ export default function Recording() {
         <View style={{ alignItems: "center" }}>
           <Text style={{ fontSize: 80, marginBottom: 24 }}>🎉</Text>
           <Text style={{ color: "#F0E6FF", fontSize: 32, fontWeight: "700", marginBottom: 48 }}>Time's up!</Text>
-          <TouchableOpacity onPress={() => router.push("/reveal")} style={{ backgroundColor: "#C9963A", paddingHorizontal: 48, paddingVertical: 18 }}>
+          <TouchableOpacity
+            onPress={() => {
+              finishClapometer();
+              router.push("/reveal");
+            }}
+            style={{ backgroundColor: "#C9963A", paddingHorizontal: 48, paddingVertical: 18 }}
+          >
             <Text style={{ color: "#1A0A2E", fontSize: 16, fontWeight: "700", letterSpacing: 4 }}>SEE RESULTS</Text>
           </TouchableOpacity>
         </View>
