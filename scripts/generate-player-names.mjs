@@ -19,13 +19,13 @@ if (!API_KEY) {
 // Priority-ordered fallback chain: OpenRouter tries each in order and moves
 // to the next on rate-limiting, downtime, or moderation errors (native
 // `models` array behavior — no custom retry logic needed). Spread across
-// different underlying providers (Meta, Qwen/Alibaba, Google, Nous) so a
-// rate limit on one doesn't take out the whole chain.
+// different underlying providers (Meta, Qwen/Alibaba, Google) so a rate
+// limit on one doesn't take out the whole chain. OpenRouter caps this array
+// at 3 entries (confirmed via live 400 response, undocumented as of writing).
 const MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
   "qwen/qwen3-next-80b-a3b-instruct:free",
   "google/gemma-4-31b-it:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
 ];
 const SOLO_COUNT = 24;
 const GROUP_COUNT = 24;
