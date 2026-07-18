@@ -105,7 +105,7 @@ async function main() {
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`OpenRouter request failed: ${response.status} ${body.slice(0, 500)}`);
+    throw new Error(`OpenRouter request failed: ${response.status} ${body.slice(0, 1500)}`);
   }
 
   const data = await response.json();
