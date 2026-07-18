@@ -16,7 +16,17 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
+// Priority-ordered fallback chain: OpenRouter tries each in order and moves
+// to the next on rate-limiting, downtime, or moderation errors (native
+// `models` array behavior — no custom retry logic needed). Spread across
+// different underlying providers (Meta, Qwen/Alibaba, Google, Nous) so a
+// rate limit on one doesn't take out the whole chain.
+const MODELS = [
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "google/gemma-4-31b-it:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+];
 const SOLO_COUNT = 24;
 const GROUP_COUNT = 24;
 const MAX_NAME_LENGTH = 40;
@@ -83,14 +93,13 @@ async function main() {
       "X-Title": "HDYD daily player names",
     },
     body: JSON.stringify({
-      model: MODEL,
+      models: MODELS,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: USER_PROMPT },
       ],
       temperature: 0.9,
       max_tokens: 2000,
-      response_format: { type: "json_object" },
     }),
   });
 
@@ -104,6 +113,7 @@ async function main() {
   if (!content || typeof content !== "string") {
     throw new Error(`Unexpected OpenRouter response shape: ${JSON.stringify(data).slice(0, 500)}`);
   }
+  console.log(`Model used: ${data?.model ?? "unknown"}`);
 
   const parsed = extractJson(content);
   const solo = validateList(parsed.solo, "solo", SOLO_COUNT);
