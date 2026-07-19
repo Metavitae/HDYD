@@ -1,0 +1,43 @@
+name: HDYD daily player names
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout HDYD (has the generator script)
+        uses: actions/checkout@v4
+
+      - name: Checkout hdyd-content (public, destination)
+        uses: actions/checkout@v4
+        with:
+          repository: Metavitae/hdyd-content
+          token: ${{ secrets.HDYD_CONTENT_PAT }}
+          path: hdyd-content
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate names
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: node scripts/generate-player-names.mjs hdyd-content/playerNames.json
+
+      - name: Commit and push if changed
+        working-directory: hdyd-content
+        run: |
+          git config user.name "hdyd-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if git diff --quiet -- playerNames.json; then
+            echo "No changes, skipping commit"
+          else
+            git add playerNames.json
+            git commit -m "Daily player name refresh $(date -u +%Y-%m-%d)"
+            git push
+          fi
