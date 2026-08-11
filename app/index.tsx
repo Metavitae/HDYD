@@ -10,6 +10,9 @@ export default function Index() {
       <TouchableOpacity onPress={() => router.push("/gamemode")} style={{ marginTop: 60, backgroundColor: "#C9963A", paddingHorizontal: 48, paddingVertical: 18 }}>
         <Text style={{ color: "#1A0A2E", fontSize: 16, letterSpacing: 4, fontWeight: "700" }}>START GAME</Text>
       </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push("/pose-test")} style={{ marginTop: 20 }}>
+        <Text style={{ color: "#F0E6FF", fontSize: 12, opacity: 0.5 }}>pose test (dev)</Text>
+      </TouchableOpacity>
     </View>
   );
 }
