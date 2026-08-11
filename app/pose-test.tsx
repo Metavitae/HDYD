@@ -74,6 +74,10 @@ export default function PoseTest() {
       minPosePresenceConfidence: 0.5,
       minTrackingConfidence: 0.5,
       delegate: Delegate.GPU,
+      // Unthrottled submission floods MediaPipe's async queue faster than it
+      // drains, so "inference time" (capture-to-result) balloons into the
+      // seconds once a backlog builds. Cap submission rate to stay under it.
+      fpsMode: 20,
     }
   );
 
