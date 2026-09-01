@@ -1,7 +1,20 @@
-import { Text, View, TouchableOpacity, Animated } from "react-native";
+import { Text, View, TouchableOpacity, Animated, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets } from "expo-audio";
+import {
+  Camera,
+  useCameraDevice,
+  useCameraFormat,
+  useCameraPermission,
+} from "react-native-vision-camera";
+import {
+  usePoseDetection,
+  RunningMode,
+  Delegate,
+  type PoseDetectionResultBundle,
+  type Landmark,
+} from "react-native-mediapipe-posedetection";
 import { useGame } from "./context/GameContext";
 import { micPermission } from "./context/micPermission";
 
@@ -18,6 +31,67 @@ export default function Recording() {
   const [count, setCount] = useState(3);
   const [timeLeft, setTimeLeft] = useState(30);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Pose-detection capture (ported from the standalone app/pose-test.tsx
+  // PoC, confirmed working there). Landmark frames accumulate here for the
+  // full recording window; scoring off this data isn't wired up yet —
+  // reveal.tsx still generates rhythm/physicality scores randomly. This is
+  // step one: get real landmark capture running live during gameplay.
+  const { hasPermission: hasCameraPermission, requestPermission: requestCameraPermission } = useCameraPermission();
+  const capturedFramesRef = useRef<{ landmarks: Landmark[]; timestampMs: number }[]>([]);
+
+  useEffect(() => {
+    if (!hasCameraPermission) requestCameraPermission();
+  }, [hasCameraPermission, requestCameraPermission]);
+
+  const onPoseResults = useCallback((result: PoseDetectionResultBundle) => {
+    // Same defensive dual-shape read as pose-test.tsx — this package's
+    // shipped types disagree with its own README on result shape.
+    const r = result as unknown as {
+      landmarks?: Landmark[][];
+      results?: { landmarks: Landmark[][] }[];
+      inferenceTime?: number;
+    };
+    const pose = (r.landmarks ?? r.results?.[0]?.landmarks ?? [])[0];
+    if (!pose) return;
+    capturedFramesRef.current.push({ landmarks: pose, timestampMs: r.inferenceTime ?? Date.now() });
+  }, []);
+
+  const onPoseError = useCallback((error: { code: number; message: string }) => {
+    console.error("Pose detection error:", error.code, error.message);
+  }, []);
+
+  const poseSolution = usePoseDetection(
+    { onResults: onPoseResults, onError: onPoseError },
+    RunningMode.LIVE_STREAM,
+    "pose_landmarker_lite.task",
+    {
+      numPoses: 1,
+      minPoseDetectionConfidence: 0.5,
+      minPosePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+      delegate: Delegate.GPU,
+      fpsMode: 20,
+    }
+  );
+
+  // Rear camera only — players face away from themselves to dance, same as
+  // pose-test.tsx. The 1280x720 constraint doesn't transfer automatically
+  // between screens; it must be reapplied here, same fix as pose-test.tsx.
+  const cameraDevice = useCameraDevice("back");
+  const cameraFormat = useCameraFormat(cameraDevice, [{ videoResolution: { width: 1280, height: 720 } }]);
+
+  useEffect(() => {
+    if (cameraDevice) poseSolution.cameraDeviceChangeHandler(cameraDevice);
+  }, [poseSolution, cameraDevice]);
+
+  useEffect(() => {
+    poseSolution.resizeModeChangeHandler("cover");
+  }, [poseSolution]);
+
+  useEffect(() => {
+    capturedFramesRef.current = [];
+  }, []);
 
   // Crowd mode only: capture ambient baseline starting 2s before the dance
   // timer ends, then keep listening for the peak indefinitely — it does NOT
@@ -119,8 +193,27 @@ export default function Recording() {
     }
   }, [phase]);
 
+  const showCamera = phase === "recording" && hasCameraPermission && cameraDevice != null;
+
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1A0A2E", padding: 24 }}>
+      {showCamera && (
+        <Camera
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+          device={cameraDevice}
+          format={cameraFormat}
+          pixelFormat="rgb"
+          isActive={true}
+          frameProcessor={poseSolution.frameProcessor}
+          onLayout={poseSolution.cameraViewLayoutChangeHandler}
+          onOutputOrientationChanged={poseSolution.cameraOrientationChangedHandler}
+          photo={true}
+        />
+      )}
+      {showCamera && (
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(26,10,46,0.45)" }]} pointerEvents="none" />
+      )}
       {phase === "countdown" && (
         <View style={{ alignItems: "center" }}>
           <Text style={{ color: "#C9963A", fontSize: 13, letterSpacing: 4, textTransform: "uppercase", marginBottom: 40 }}>
