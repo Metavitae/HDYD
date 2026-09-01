@@ -38,7 +38,7 @@ const countries = [
 
 export default function Round() {
   const router = useRouter();
-  const { currentPlayer, currentRoundIndex, roundCount, currentCountry, setCurrentCountry } = useGame();
+  const { currentPlayer, currentRoundIndex, roundCount, currentCountry, setCurrentCountry, usedCountries, markCountryUsed } = useGame();
   const [phase, setPhase] = useState("spinning");
   const spinAnim = useRef(new Animated.Value(0)).current;
 
@@ -55,8 +55,19 @@ export default function Round() {
 
     setTimeout(() => {
       anim.stop();
-      const picked = countries[Math.floor(Math.random() * countries.length)];
+      const isFinalRound = currentRoundIndex + 1 >= roundCount;
+      // Final round draws only from countries not yet danced this match, so
+      // the last round never repeats an earlier reveal. Falls back to the
+      // full pool if every entry has already been used (only possible with
+      // more player turns than the 30-country pool has room for).
+      const pool = isFinalRound
+        ? countries.filter(c => !usedCountries.includes(c.name)).length > 0
+          ? countries.filter(c => !usedCountries.includes(c.name))
+          : countries
+        : countries;
+      const picked = pool[Math.floor(Math.random() * pool.length)];
       setCurrentCountry(picked);
+      markCountryUsed(picked.name);
       setPhase("reveal");
     }, 3000);
   }, []);

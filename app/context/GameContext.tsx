@@ -29,6 +29,7 @@ type GameState = {
   currentRoundIndex: number;
   currentPlayerIndex: number;
   currentCountry: Country | null;
+  usedCountries: string[];
 };
 
 type GameContextValue = GameState & {
@@ -42,6 +43,7 @@ type GameContextValue = GameState & {
   nextPlayerTurn: () => void;
   currentPlayer: Player | null;
   setCurrentCountry: (country: Country | null) => void;
+  markCountryUsed: (name: string) => void;
   addScore: (playerIndex: number, points: number) => void;
   addCheerScore: (playerIndex: number, points: number) => void;
   resetGame: () => void;
@@ -56,6 +58,7 @@ const initialState: GameState = {
   currentRoundIndex: 0,
   currentPlayerIndex: 0,
   currentCountry: null,
+  usedCountries: [],
 };
 
 export function GameProvider({ children }: { children: ReactNode }) {
@@ -65,6 +68,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [currentRoundIndex, setCurrentRoundIndex] = useState<number>(initialState.currentRoundIndex);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(initialState.currentPlayerIndex);
   const [currentCountry, setCurrentCountry] = useState<Country | null>(initialState.currentCountry);
+  const [usedCountries, setUsedCountries] = useState<string[]>(initialState.usedCountries);
 
   const addPlayer = (name: string, type: PlayerType) => {
     setPlayers(prev => (prev.length >= MAX_PLAYERS ? prev : [...prev, { name, type, score: 0, cheerScore: 0 }]));
@@ -90,6 +94,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const markCountryUsed = (name: string) => {
+    setUsedCountries(prev => (prev.includes(name) ? prev : [...prev, name]));
+  };
+
   const resetGame = () => {
     setPlayers(initialState.players);
     setMode(initialState.mode);
@@ -97,6 +105,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setCurrentRoundIndex(initialState.currentRoundIndex);
     setCurrentPlayerIndex(initialState.currentPlayerIndex);
     setCurrentCountry(initialState.currentCountry);
+    setUsedCountries(initialState.usedCountries);
   };
 
   const currentPlayer = players[currentPlayerIndex] ?? null;
@@ -109,6 +118,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       currentRoundIndex,
       currentPlayerIndex,
       currentCountry,
+      usedCountries,
       currentPlayer,
       setPlayers,
       addPlayer,
@@ -119,11 +129,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setCurrentPlayerIndex,
       nextPlayerTurn,
       setCurrentCountry,
+      markCountryUsed,
       addScore,
       addCheerScore,
       resetGame,
     }),
-    [players, mode, roundCount, currentRoundIndex, currentPlayerIndex, currentCountry, currentPlayer]
+    [players, mode, roundCount, currentRoundIndex, currentPlayerIndex, currentCountry, usedCountries, currentPlayer]
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
