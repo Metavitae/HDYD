@@ -1,0 +1,42 @@
+diff --git a/node_modules/react-native-mediapipe-posedetection/android/src/main/java/com/mediapipeposedetection/posedetection/PoseDetectorHelper.kt b/node_modules/react-native-mediapipe-posedetection/android/src/main/java/com/mediapipeposedetection/posedetection/PoseDetectorHelper.kt
+index b8b3841..ad49586 100644
+--- a/node_modules/react-native-mediapipe-posedetection/android/src/main/java/com/mediapipeposedetection/posedetection/PoseDetectorHelper.kt
++++ b/node_modules/react-native-mediapipe-posedetection/android/src/main/java/com/mediapipeposedetection/posedetection/PoseDetectorHelper.kt
+@@ -39,6 +39,12 @@ class PoseDetectorHelper(
+   private var poseLandmarker: PoseLandmarker? = null
+   private var imageRotation = 0
+ 
++  // Guards against flooding MediaPipe's internal async queue: if a frame is
++  // still being processed when the next one arrives, drop the new one rather
++  // than queuing it. Without this, capture-to-result latency grows unbounded
++  // once frames arrive faster than the model drains them.
++  @Volatile private var isDetecting = false
++
+   init {
+     setupPoseLandmarker()
+   }
+@@ -234,6 +240,8 @@ class PoseDetectorHelper(
+               "Attempting to call detectLiveStream" + " while not using RunningMode.LIVE_STREAM"
+       )
+     }
++    if (isDetecting) return
++    isDetecting = true
+     val frameTime = SystemClock.uptimeMillis()
+     // this is a hack bc we use this in the callback and it might have changed
+ //    this.imageRotation = orientationToDegrees(orientation)
+@@ -279,6 +287,7 @@ class PoseDetectorHelper(
+ 
+   // Return the landmark result to this PoseDetectorHelper's caller
+   private fun returnLivestreamResult(result: PoseLandmarkerResult, input: MPImage) {
++    isDetecting = false
+     if (result.landmarks().size > 0) {
+       val finishTimeMs = SystemClock.uptimeMillis()
+       val inferenceTime = finishTimeMs - result.timestampMs()
+@@ -294,6 +303,7 @@ class PoseDetectorHelper(
+   // Return errors thrown during detection to this PoseDetectorHelper's
+   // caller
+   private fun returnLivestreamError(error: RuntimeException) {
++    isDetecting = false
+     poseDetectorListener?.onError(error.message ?: "An unknown error has occurred")
+   }
+ 
