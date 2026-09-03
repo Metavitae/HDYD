@@ -3,7 +3,7 @@
     "name": "HDYD",
     "slug": "HDYD",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "hdyd",
     "userInterfaceStyle": "automatic",

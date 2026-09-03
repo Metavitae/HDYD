@@ -1,11 +1,13 @@
 import { Stack } from "expo-router";
 import { useEffect } from "react";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { GameProvider } from "./context/GameContext";
 import { requestMicPermissionOnce } from "./context/micPermission";
 
 export default function RootLayout() {
   useEffect(() => {
     requestMicPermissionOnce();
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
   }, []);
 
   return (
